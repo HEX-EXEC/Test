@@ -1,0 +1,6 @@
+while true do
+    for i = 0, 20 do
+        rconsoleprint("\r\27[32m[" .. string.rep("=", i) .. string.rep(" ", 20-i) .. "]")
+        wait(0.1)
+    end
+end
