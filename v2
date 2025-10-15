@@ -1,64 +1,101 @@
 local Modules = {
-    Colors =  {
-        ["Green"] = "0,255,0", 
-        ["Cyan"] = "33, 161, 163",
+    Colors = {
+        ["Green"] = "0,255,0",
+        ["Cyan"] = "33,161,163",
         ["White"] = "255,255,255",
-		["Pink"] = "255, 102, 153",
+        ["Pink"] = "255,102,153",
     },
     Services = {
         RunService = game:GetService("RunService"),
-        CoreGui = game:GetService("CoreGui")
-    }
+        CoreGui = game:GetService("CoreGui"),
+    },
 }
 
-Modules.ChangeColor = function() 
-    local Loop;
+-- Utility: wait for DevConsoleMaster to exist
+Modules.WaitForConsole = function(timeout)
+    local start = os.clock()
+    repeat
+        local console = Modules.Services.CoreGui:FindFirstChild("DevConsoleMaster")
+        if console then
+            return console
+        end
+        task.wait(0.5)
+    until os.clock() - start > (timeout or 10)
+    warn("DevConsoleMaster not found after waiting.")
+    return nil
+end
+
+Modules.ChangeColor = function()
+    local console = Modules.WaitForConsole(10)
+    if not console then
+        warn("ChangeColor cancelled: Developer console not found.")
+        return
+    end
+
+    local Loop
     Loop = Modules.Services.RunService.Heartbeat:Connect(function()
-        local success,err = pcall(function()
-            for index,label in pairs(Modules.Services.CoreGui:FindFirstChild("DevConsoleMaster"):GetDescendants()) do 
-                if label:IsA("TextLabel") then 
-                    label.RichText = true 
-                end 
-            end 
+        local success, err = pcall(function()
+            for _, label in pairs(console:GetDescendants()) do
+                if label:IsA("TextLabel") then
+                    label.RichText = true
+                end
+            end
         end)
 
-        if not success then 
+        if not success then
             warn(`A error occured {err}`)
             Loop:Disconnect()
-        end 
+        end
     end)
 end
 
-Modules.LoadingBar = function(watermark,color, delay,loadingsymbol)
-    delay = delay or 0.1 
+Modules.LoadingBar = function(watermark, color, delay, loadingsymbol)
+    delay = delay or 0.1
 
-    local Text = watermark..tostring(math.random(500,20000))
-
+    local Text = watermark .. tostring(math.random(500, 20000))
     print(Text)
+
+    local console = Modules.WaitForConsole(10)
+    if not console then
+        warn("LoadingBar cancelled: Developer console not found.")
+        return
+    end
 
     local loadingLabel = nil
     local progress = ""
 
-    repeat task.wait()
-        for index,label in pairs(Modules.Services.CoreGui:FindFirstChild("DevConsoleMaster"):GetDescendants()) do 
-             if label:IsA("TextLabel") and string.find(label.Text:lower(),Text:lower()) then 
-                loadingLabel = label 
-				break
-            end 
-        end 
+    repeat
+        task.wait()
+        for _, label in pairs(console:GetDescendants()) do
+            if label:IsA("TextLabel") and string.find(label.Text:lower(), Text:lower()) then
+                loadingLabel = label
+                break
+            end
+        end
     until loadingLabel
 
     local start = os.time()
 
     for i = 1, 50 do
         progress = progress .. loadingsymbol
-        loadingLabel.Text = string.format("<font color='rgb(%s)' size='15'>[%s] [%d%% loaded] %s</font>", Modules.Colors["White"],watermark, i*2, progress)
+        loadingLabel.Text = string.format(
+            "<font color='rgb(%s)' size='15'>[%s] [%d%% loaded] %s</font>",
+            Modules.Colors["White"],
+            watermark,
+            i * 2,
+            progress
+        )
         task.wait(delay)
     end
 
-    loadingLabel.Text = string.format("<font color='rgb(%s)' size='15'>[%s] Successfully loaded in %ds</font>", Modules.Colors[color],watermark, os.time() - start)
+    loadingLabel.Text = string.format(
+        "<font color='rgb(%s)' size='15'>[%s] Successfully loaded in %ds</font>",
+        Modules.Colors[color],
+        watermark,
+        os.time() - start
+    )
 end
 
+-- Run modules
 Modules.ChangeColor()
-
-Modules.LoadingBar("Your watermark","Green", 0.001,"#")
+Modules.LoadingBar("Your watermark", "Green", 0.001, "#")
